@@ -101,7 +101,7 @@ class Car:
             elif self.car_sonic_servo_dir == 0:
                 self.car_sonic_servo_angle -= 60
 
-    def mode_infrared(self):
+    def mode_infrared(self, counter):
         if (time.time() - self.car_record_time) > 0.2:
             self.car_record_time = time.time()
             infrared_value = self.infrared.read_all_infrared()
@@ -114,6 +114,7 @@ class Car:
             print("left_infrared: " + str(left_infrared), "right_infrared: " + str(right_infrared), "center_infrared: " + str(center_infrared))
 
             if left_infrared == 4:
+                counter = 0
                 # Turn left in episodes
                 self.motor.set_motor_model(-1250, -1250, 1250,1250)  # Turn left
                 time.sleep(0.15)  # Turn for a short time
@@ -121,6 +122,7 @@ class Car:
                 time.sleep(0.1)  # Pause to check sensors
 
             elif right_infrared == 1:
+                counter = 0
                 # Turn right in episodes
                 self.motor.set_motor_model(1250, 1250, -1250,-1250)  # Turn right
                 time.sleep(0.15)  # Turn for a short time
@@ -128,6 +130,7 @@ class Car:
                 time.sleep(0.1)  # Pause to check sensors
 
             elif center_infrared == 2:
+                counter = 0
                 # Move forward in episodes
                 self.motor.set_motor_model(800,800,800,800)  # Move forward
                 time.sleep(0.2)  # Move for a short time
@@ -135,12 +138,30 @@ class Car:
                 time.sleep(0.1)  # Pause to check sensors
 
             else:
+                counter += 1
                 # Line lost, move backward in episodes
                 print("Line lost, moving back...")
-                self.motor.set_motor_model(-800, -800, -800, -800)  # Move backward
-                time.sleep(0.2)  # Move for a short time
-                self.motor.set_motor_model(0,0,0,0)  # Stop
+                if counter < 10:
+                    self.motor.set_motor_model(-800, -800, -800, -800)  # Move backward
+                    time.sleep(0.1)  # Move backward briefly
+                    self.motor.set_motor_model(0, 0, 0, 0)  # Stop
+                else:
+                    # Pick a random direction
+                    import random
+                    direction = random.choice(["left", "right"])
+                    print(f"Trying random direction: {direction}")
+                    if direction == "left":
+                        self.motor.set_motor_model(-1250, -1250, 1250, 1250)  # Turn left
+                    else:
+                        self.motor.set_motor_model(1250, 1250, -1250, -1250)  # Turn right
+                    time.sleep(0.2)  # Turn for a short time
+                    self.motor.set_motor_model(800, 800, 800, 800)  # Move forward
                 time.sleep(0.1)  # Pause to check sensors
+
+    def mode_solve_maze(self):
+        if (time.time() - self.car_record_time) > 0.2:
+            self.car_record_time = time.time()
+
 
     def mode_light(self):
         if (time.time() - self.car_record_time) > 0.2:
@@ -293,8 +314,9 @@ def test_car_sonic():
 def test_car_infrared():
     car = Car()
     try:
+        counter = 0
         while True:
-            car.mode_infrared()
+            car.mode_infrared(counter)
     except KeyboardInterrupt:
         car.close()
         print("\nEnd of program")
@@ -318,6 +340,15 @@ def test_car_rotate():
         print ("\nEnd of program")
         car.motor.set_motor_model(0,0,0,0)
         car.close()
+
+def test_solve_maze():
+    car = Car()
+    try:
+        car.mode_solve_maze()
+    except KeyboardInterrupt:
+        car.close()
+        print("\nEnd of program")
+
 
 def test_car_astar():
     car = Car()
@@ -376,3 +407,5 @@ if __name__ == '__main__':
             test_car_rotate()
         elif sys.argv[1].lower() == 'astar':
             test_car_astar()
+        elif sys.argv[1].lower() == 'maze':
+            test_solve_maze()
