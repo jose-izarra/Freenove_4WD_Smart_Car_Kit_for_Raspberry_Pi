@@ -6,7 +6,15 @@ from adc import ADC
 import time
 import math
 import curses
+from astar import astar
 
+MAZE_MAP = [
+    [0, 1, 0, 0, 0, 1, 0, 1, 0, 0],
+    [0, 1, 1, 0, 1, 1, 0, 1, 1, 0],
+    [0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
+    [1, 0, 1, 1, 0, 1, 1, 0, 1, 0],
+    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+]
 
 
 class Car:
@@ -167,6 +175,28 @@ class Car:
             time.sleep(5*self.time_compensate*bat_compensate/1000)
             angle -= 5
 
+    def execute_path(car, path):
+        steps_taken = 0
+        for (cur_x, cur_y), (next_x, next_y) in zip(path, path[1:]):
+            dx = next_x - cur_x
+            dy = next_y - cur_y
+
+            if dx == 1:  # move down
+                car.motor.set_motor_model(800,800,800,800)
+            elif dx == -1:  # move up
+                car.motor.set_motor_model(-800,-800,-800,-800)
+            elif dy == 1:  # move right
+                car.motor.set_motor_model(1250,1250,-1250,-1250)
+            elif dy == -1:  # move left
+                car.motor.set_motor_model(-1250,-1250,1250,1250)
+
+            steps_taken += 1
+            time.sleep(0.5)  # Assume 0.5s = 1 cell block
+            car.motor.set_motor_model(0,0,0,0)
+            time.sleep(0.2)
+
+        print(f"Total blocks moved: {steps_taken}")
+
     def manual_control(self, stdscr):
         # Set up curses for manual control
         stdscr.nodelay(True)  # Non-blocking input
@@ -289,6 +319,19 @@ def test_car_rotate():
         car.motor.set_motor_model(0,0,0,0)
         car.close()
 
+def test_car_astar():
+    car = Car()
+    try:
+        start = (0, 0)
+        goal = (4, 9)
+        path = astar(MAZE_MAP, start, goal)
+        print("Path found by A*: ", path)
+        car.execute_path(path)
+    except KeyboardInterrupt:
+        print("Execution interrupted.")
+    finally:
+        car.close()
+
 if __name__ == '__main__':
     import sys
     if len(sys.argv) < 2:
@@ -331,3 +374,5 @@ if __name__ == '__main__':
             test_car_light()
         elif sys.argv[1] == 'Rotate' or sys.argv[1] == 'rotate':
             test_car_rotate()
+        elif sys.argv[1].lower() == 'astar':
+            test_car_astar()
