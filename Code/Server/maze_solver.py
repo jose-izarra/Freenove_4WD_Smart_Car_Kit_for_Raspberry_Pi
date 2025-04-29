@@ -106,19 +106,24 @@ class Car:
                 self.motor.set_motor_model(800,800,800,800)
                 time.sleep(0.3)
                 self.motor.set_motor_model(0,0,0,0)
-
             elif left_infrared == 4:
-                self.motor.set_motor_model(-1500,2000, 3500,-2000)
+                self.motor.set_motor_model(1250, 1250, -1250,-1250)
                 time.sleep(0.3)
             elif right_infrared == 1:
-                self.motor.set_motor_model(3500, -2000, -1500,2000)
+                self.motor.set_motor_model(-1250, -1250, 1250,1250)
+
+            # elif left_infrared == 4:
+            #     self.motor.set_motor_model(-1250, -1250, 2500,2500)
+            #     time.sleep(0.3)
+            # elif right_infrared == 1:
+            #     self.motor.set_motor_model(1250, 1250, 2550 ,2500)
                 time.sleep(0.6)
             else:
                 # Line lost, implement search pattern
                 print("Line lost, searching...")
 
                 # First try turning left to find the line
-                self.motor.set_motor_model(-1500,2000, 3500,-2000)
+                self.motor.set_motor_model(-1250,-1250,1250,1250) # left
                 time.sleep(0.3)  # Give it a moment to turn
 
                 # Check if we found the line
@@ -126,7 +131,7 @@ class Car:
                     return  # Line found, continue with next loop iteration
 
                 # If not found, try turning right
-                self.motor.set_motor_model(3500,-2000, -1500,2000)
+                self.motor.set_motor_model(1250, 1250,-1250,-1250) # right
                 time.sleep(0.6)  # Turn right (double time to cover both sides)
 
                 # Check if we found the line
