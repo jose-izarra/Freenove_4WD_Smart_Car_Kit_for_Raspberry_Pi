@@ -108,56 +108,36 @@ class Car:
                 self.motor.set_motor_model(0,0,0,0)
 
             elif left_infrared == 4:
-                    self.motor.set_motor_model(-1500,0, 2500,0)
-                    time.sleep(0.3)
+                self.motor.set_motor_model(-1500,0, 3500,0)
+                time.sleep(0.3)
             elif right_infrared == 1:
-                    self.motor.set_motor_model(2500,0, -1500,0)
-                    time.sleep(0.6)
+                self.motor.set_motor_model(3500,0, -1500,0)
+                time.sleep(0.6)
             else:
-                # Line lost, go back a bit and sleep
-                self.motor.set_motor_model(-1500,0, -1500,0)
+                # Line lost, implement search pattern
+                print("Line lost, searching...")
+
+                # First try turning left to find the line
+                self.motor.set_motor_model(-1500,0, 2500,0)
+                time.sleep(0.3)  # Give it a moment to turn
+
+                # Check if we found the line
+                if self.infrared.read_all_infrared() != 0:
+                    return  # Line found, continue with next loop iteration
+
+                # If not found, try turning right
+                self.motor.set_motor_model(2500,0, -1500,0)
+                time.sleep(0.6)  # Turn right (double time to cover both sides)
+
+                # Check if we found the line
+                if self.infrared.read_all_infrared() != 0:
+                    return  # Line found, continue with next loop iteration
+
+                # If still not found, go back to center and try moving forward a bit
+                self.motor.set_motor_model(-1500,0, 2500,0)
+                time.sleep(0.3)  # Return to center
+                self.motor.set_motor_model(800,800,800,800)  # Move forward a bit
                 time.sleep(0.3)
-                self.motor.set_motor_model(0,0,0,0)
-                time.sleep(0.3)
-
-
-
-            # # First try turning left to find the line
-            # self.motor.set_motor_model(-1500,0, 2500,0)
-            # time.sleep(0.3)  # Give it a moment to turn
-
-            # # Check if we found the line
-            # if self.infrared.read_all_infrared() != 0:
-            #     return  # Line found, continue with next loop iteration
-
-            # # If not found, try turning right
-            # self.motor.set_motor_model(2500,0, -1500,0)
-            # time.sleep(0.6)  # Turn right (double time to cover both sides)
-
-            # # Check if we found the line
-            # if self.infrared.read_all_infrared() != 0:
-            #     return  # Line found, continue with next loop iteration
-
-            # # If still not found, go back to center and try moving forward a bit
-            # self.motor.set_motor_model(-1500,0, 2500,0)
-            # time.sleep(0.3)  # Return to center
-            # self.motor.set_motor_model(800,800,800,800)  # Move forward a bit
-            # # Try to find the line by making small adjustments left and right
-            # print("Line lost, searching...")
-            # self.motor.set_motor_model(-1500,0, 2500,0)
-
-
-
-            # elif infrared_value == 4:
-            #     self.motor.set_motor_model(-1500,-1500,2500,2500) # left
-            # elif infrared_value == 6:
-            #     self.motor.set_motor_model(-2000,-2000,4000,4000)
-            # elif infrared_value == 1:
-            #     self.motor.set_motor_model(2500,2500,-1500,-1500) # right
-            # elif infrared_value == 3:
-            #     self.motor.set_motor_model(4000,4000,-2000,-2000)
-            # elif infrared_value == 7:
-            #     self.motor.set_motor_model(0,0,0,0)
 
     def mode_light(self):
         if (time.time() - self.car_record_time) > 0.2:
