@@ -144,57 +144,73 @@ class Car:
             angle -= 5
 
     def mode_wall_following(self):
-        if (time.time() - self.car_record_time) > 0.2:
+        if (time.time() - self.car_record_time) > 0.3:  # Increased delay between measurements
             self.car_record_time = time.time()
             
-            # First, get all three readings
-            self.servo.set_servo_pwm('0', 30)  # Left
-            time.sleep(0.1)  # Wait for servo to move
-            self.car_sonic_distance[0] = self.sonic.get_distance()
+            # Take 5 measurements at different angles
+            self.servo.set_servo_pwm('0', 0)  # Far left
+            time.sleep(0.15)  # Increased wait time
+            far_left = self.sonic.get_distance()
+            
+            self.servo.set_servo_pwm('0', 45)  # Left
+            time.sleep(0.15)
+            left = self.sonic.get_distance()
             
             self.servo.set_servo_pwm('0', 90)  # Front
-            time.sleep(0.1)  # Wait for servo to move
-            self.car_sonic_distance[1] = self.sonic.get_distance()
+            time.sleep(0.15)
+            front = self.sonic.get_distance()
             
-            self.servo.set_servo_pwm('0', 150)  # Right
-            time.sleep(0.1)  # Wait for servo to move
-            self.car_sonic_distance[2] = self.sonic.get_distance()
+            self.servo.set_servo_pwm('0', 135)  # Right
+            time.sleep(0.15)
+            right = self.sonic.get_distance()
+            
+            self.servo.set_servo_pwm('0', 180)  # Far right
+            time.sleep(0.15)
+            far_right = self.sonic.get_distance()
 
-            print("L:{}, M:{}, R:{}".format(self.car_sonic_distance[0], self.car_sonic_distance[1], self.car_sonic_distance[2]))
+            print("FL:{}, L:{}, F:{}, R:{}, FR:{}".format(far_left, left, front, right, far_right))
 
             # Thresholds for different actions
-            FRONT_THRESHOLD = 20  # cm
+            FRONT_THRESHOLD = 30  # Increased from 20 to 30 cm
             SIDE_THRESHOLD = 15   # cm
-            TURN_THRESHOLD = 30   # cm
+            TURN_THRESHOLD = 35   # Increased from 30 to 35 cm
+            SLOW_DOWN_THRESHOLD = 40  # New threshold for slowing down
 
             # Wall following logic
-            if self.car_sonic_distance[1] < FRONT_THRESHOLD:
-                print("Front obstacle detected!")
-                if self.car_sonic_distance[2] > TURN_THRESHOLD:
+            if front < FRONT_THRESHOLD:
+                print("Front obstacle detected! Distance:", front)
+                # Stop first
+                self.motor.set_motor_model(0, 0, 0, 0)
+                time.sleep(0.2)
+                
+                if right > TURN_THRESHOLD and far_right > TURN_THRESHOLD:
                     print("Turning right")
                     self.motor.set_motor_model(1500, 1500, -1500, -1500)
-                    time.sleep(0.5)
-                elif self.car_sonic_distance[0] > TURN_THRESHOLD:
+                    time.sleep(0.8)  # Increased turn time
+                elif left > TURN_THRESHOLD and far_left > TURN_THRESHOLD:
                     print("Turning left")
                     self.motor.set_motor_model(-1500, -1500, 1500, 1500)
-                    time.sleep(0.5)
+                    time.sleep(0.8)  # Increased turn time
                 else:
                     print("Dead end detected, backing up")
                     self.motor.set_motor_model(-1000, -1000, -1000, -1000)
-                    time.sleep(0.5)
+                    time.sleep(0.8)  # Increased backup time
                     self.motor.set_motor_model(-1500, -1500, 1500, 1500)
-                    time.sleep(0.5)
+                    time.sleep(0.8)  # Increased turn time
             else:
                 # No front obstacle, follow left wall
-                if self.car_sonic_distance[0] < SIDE_THRESHOLD:
+                if front < SLOW_DOWN_THRESHOLD:
+                    print("Approaching obstacle, slowing down")
+                    self.motor.set_motor_model(400, 400, 400, 400)  # Slower speed
+                elif left < SIDE_THRESHOLD:
                     print("Too close to left wall, adjusting right")
-                    self.motor.set_motor_model(1000, 1000, 500, 500)
-                elif self.car_sonic_distance[0] > SIDE_THRESHOLD + 10:
+                    self.motor.set_motor_model(800, 800, 400, 400)
+                elif left > SIDE_THRESHOLD + 10:
                     print("Too far from left wall, adjusting left")
-                    self.motor.set_motor_model(500, 500, 1000, 1000)
+                    self.motor.set_motor_model(400, 400, 800, 800)
                 else:
                     print("Maintaining straight path")
-                    self.motor.set_motor_model(800, 800, 800, 800)
+                    self.motor.set_motor_model(600, 600, 600, 600)  # Reduced base speed
 
             # Reset servo to center position
             self.servo.set_servo_pwm('0', 90)
