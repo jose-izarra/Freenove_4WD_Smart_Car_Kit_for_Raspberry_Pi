@@ -71,19 +71,21 @@ class Car:
         if (time.time() - self.car_record_time) > 0.2:
             self.car_record_time = time.time()
             self.servo.set_servo_pwm('0', self.car_sonic_servo_angle)
+            
+            # Get distance readings
             if self.car_sonic_servo_angle == 30:
-                self.car_sonic_distance[0] = self.sonic.get_distance()
+                self.car_sonic_distance[0] = self.sonic.get_distance()  # Left
             elif self.car_sonic_servo_angle == 90:
-                self.car_sonic_distance[1] = self.sonic.get_distance()
+                self.car_sonic_distance[1] = self.sonic.get_distance()  # Front
             elif self.car_sonic_servo_angle == 150:
-                self.car_sonic_distance[2] = self.sonic.get_distance()
+                self.car_sonic_distance[2] = self.sonic.get_distance()  # Right
 
             print("L:{}, M:{}, R:{}".format(self.car_sonic_distance[0], self.car_sonic_distance[1], self.car_sonic_distance[2]))
             self.run_motor_ultrasonic(self.car_sonic_distance)
 
-            if self.car_sonic_servo_angle <= 30:
+            if self.car_sonic_servo_angle <= 0:
                 self.car_sonic_servo_dir = 1
-            elif self.car_sonic_servo_angle >= 150:
+            elif self.car_sonic_servo_angle >= 120:
                 self.car_sonic_servo_dir = 0
             if self.car_sonic_servo_dir == 1:
                 self.car_sonic_servo_angle += 60
@@ -141,6 +143,65 @@ class Car:
             time.sleep(5*self.time_compensate*bat_compensate/1000)
             angle -= 5
 
+    def mode_wall_following(self):
+        if (time.time() - self.car_record_time) > 0.2:
+            self.car_record_time = time.time()
+            self.servo.set_servo_pwm('0', self.car_sonic_servo_angle)
+            
+            # Get distance readings
+            if self.car_sonic_servo_angle == 30:
+                self.car_sonic_distance[0] = self.sonic.get_distance()  # Left
+            elif self.car_sonic_servo_angle == 90:
+                self.car_sonic_distance[1] = self.sonic.get_distance()  # Front
+            elif self.car_sonic_servo_angle == 150:
+                self.car_sonic_distance[2] = self.sonic.get_distance()  # Right
+
+            print("L:{}, M:{}, R:{}".format(self.car_sonic_distance[0], self.car_sonic_distance[1], self.car_sonic_distance[2]))
+
+            # Thresholds for different actions
+            FRONT_THRESHOLD = 20  # cm
+            SIDE_THRESHOLD = 15   # cm
+            TURN_THRESHOLD = 30   # cm
+
+            # Wall following logic
+            if self.car_sonic_distance[1] < FRONT_THRESHOLD:
+                # Front obstacle detected
+                if self.car_sonic_distance[2] > TURN_THRESHOLD:
+                    # Right path clear, turn right
+                    self.motor.set_motor_model(1500, 1500, -1500, -1500)
+                    time.sleep(0.5)
+                elif self.car_sonic_distance[0] > TURN_THRESHOLD:
+                    # Left path clear, turn left
+                    self.motor.set_motor_model(-1500, -1500, 1500, 1500)
+                    time.sleep(0.5)
+                else:
+                    # Dead end, back up and turn
+                    self.motor.set_motor_model(-1000, -1000, -1000, -1000)
+                    time.sleep(0.5)
+                    self.motor.set_motor_model(-1500, -1500, 1500, 1500)
+                    time.sleep(0.5)
+            else:
+                # No front obstacle, follow left wall
+                if self.car_sonic_distance[0] < SIDE_THRESHOLD:
+                    # Too close to left wall, adjust right
+                    self.motor.set_motor_model(1000, 1000, 500, 500)
+                elif self.car_sonic_distance[0] > SIDE_THRESHOLD + 10:
+                    # Too far from left wall, adjust left
+                    self.motor.set_motor_model(500, 500, 1000, 1000)
+                else:
+                    # Maintain straight path
+                    self.motor.set_motor_model(800, 800, 800, 800)
+
+            # Update servo angle for next reading
+            if self.car_sonic_servo_angle <= 0:
+                self.car_sonic_servo_dir = 1
+            elif self.car_sonic_servo_angle >= 120:
+                self.car_sonic_servo_dir = 0
+            if self.car_sonic_servo_dir == 1:
+                self.car_sonic_servo_angle += 60
+            elif self.car_sonic_servo_dir == 0:
+                self.car_sonic_servo_angle -= 60
+
 def test_car_sonic():
     car = Car()
     try:
@@ -179,6 +240,16 @@ def test_car_rotate():
         car.motor.set_motor_model(0,0,0,0)
         car.close()
 
+def test_car_wall_following():
+    car = Car()
+    try:
+        print("Starting wall following mode...")
+        while True:
+            car.mode_wall_following()
+    except KeyboardInterrupt:
+        car.close()
+        print("\nEnd of program")
+
 if __name__ == '__main__':
     import sys
     if len(sys.argv) < 2:
@@ -192,3 +263,5 @@ if __name__ == '__main__':
         test_car_light()
     elif sys.argv[1] == 'Rotate' or sys.argv[1] == 'rotate':
         test_car_rotate()
+    elif sys.argv[1] == 'Wall' or sys.argv[1] == 'wall':
+        test_car_wall_following()
