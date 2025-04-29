@@ -103,26 +103,33 @@ class Car:
             print("left_infrared: " + str(left_infrared), "right_infrared: " + str(right_infrared), "center_infrared: " + str(center_infrared))
 
             if center_infrared == 2:
-                self.motor.set_motor_model(800,800,800,800)
-                time.sleep(0.3)
-                self.motor.set_motor_model(0,0,0,0)
-            elif left_infrared == 4:
-                self.motor.set_motor_model(1250, 1250, -1250,-1250)
-                time.sleep(0.3)
-            elif right_infrared == 1:
-                self.motor.set_motor_model(-1250, -1250, 1250,1250)
+                # Move forward in episodes
+                self.motor.set_motor_model(600,600,600,600)  # Move forward
+                time.sleep(0.2)  # Move for a short time
+                self.motor.set_motor_model(0,0,0,0)  # Stop
+                time.sleep(0.1)  # Pause to check sensors
 
-            # elif left_infrared == 4:
-            #     self.motor.set_motor_model(-1250, -1250, 2500,2500)
-            #     time.sleep(0.3)
-            # elif right_infrared == 1:
-            #     self.motor.set_motor_model(1250, 1250, 2550 ,2500)
-                time.sleep(0.6)
+            elif left_infrared == 4:
+                # Turn left in episodes
+                self.motor.set_motor_model(1250, 1250, -1250,-1250)  # Turn left
+                time.sleep(0.15)  # Turn for a short time
+                self.motor.set_motor_model(0,0,0,0)  # Stop
+                time.sleep(0.1)  # Pause to check sensors
+
+            elif right_infrared == 1:
+                # Turn right in episodes
+                self.motor.set_motor_model(-1250, -1250, 1250,1250)  # Turn right
+                time.sleep(0.15)  # Turn for a short time
+                self.motor.set_motor_model(0,0,0,0)  # Stop
+                time.sleep(0.1)  # Pause to check sensors
+
             else:
-                # Line lost, go back a bit
-                print("Line lost, searching...")
-                self.motor.set_motor_model(-800, -800, -800, -800)
-                time.sleep(0.3)
+                # Line lost, move backward in episodes
+                print("Line lost, moving back...")
+                self.motor.set_motor_model(-600, -600, -600, -600)  # Move backward
+                time.sleep(0.2)  # Move for a short time
+                self.motor.set_motor_model(0,0,0,0)  # Stop
+                time.sleep(0.1)  # Pause to check sensors
 
     def mode_light(self):
         if (time.time() - self.car_record_time) > 0.2:
