@@ -97,12 +97,9 @@ class Car:
             print("infrared_value: " + str(infrared_value))
             if infrared_value == 2:
                 self.motor.set_motor_model(800,800,800,800)
+                time.sleep(0.3)
+                self.motor.set_motor_model(0,0,0,0)
             elif infrared_value == 0:
-                left_infrared = self.infrared.read_one_infrared(1) << 2
-                right_infrared = self.infrared.read_one_infrared(3) << 1
-                center_infrared = self.infrared.read_one_infrared(2)
-                print("left_infrared: " + str(left_infrared), "right_infrared: " + str(right_infrared), "center_infrared: " + str(center_infrared))
-
                 # Try to find the line by making small adjustments left and right
                 print("Line lost, searching...")
                 self.motor.set_motor_model(0,0,0,0)
