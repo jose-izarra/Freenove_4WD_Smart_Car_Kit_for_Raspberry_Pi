@@ -108,10 +108,10 @@ class Car:
                 self.motor.set_motor_model(0,0,0,0)
 
             elif left_infrared == 4:
-                    self.motor.set_motor_model(2500,0, -1500,0)
+                    self.motor.set_motor_model(-1500,0, 2500,0)
                     time.sleep(0.3)
             elif right_infrared == 1:
-                    self.motor.set_motor_model(-1500,0, 2500,0)
+                    self.motor.set_motor_model(2500,0, -1500,0)
                     time.sleep(0.6)
             else:
                 # Line lost, go back a bit and sleep
