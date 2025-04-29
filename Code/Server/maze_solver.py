@@ -121,7 +121,7 @@ class Car:
             else:
                 # Line lost, go back a bit
                 print("Line lost, searching...")
-                self.motor.set_motor_model(-800, -800, 800, 800)
+                self.motor.set_motor_model(-800, -800, -800, -800)
                 time.sleep(0.3)
 
     def mode_light(self):
