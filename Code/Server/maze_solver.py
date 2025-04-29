@@ -69,9 +69,8 @@ class Car:
 
     def mode_ultrasonic(self):
         if (time.time() - self.car_record_time) > 0.2:
-            if (time.time() - self.car_record_time) > 0.2:
-                self.car_record_time = time.time()
-                self.servo.set_servo_pwm('0', self.car_sonic_servo_angle)
+            self.car_record_time = time.time()
+            self.servo.set_servo_pwm('0', self.car_sonic_servo_angle)
             if self.car_sonic_servo_angle == 30:
                 self.car_sonic_distance[0] = self.sonic.get_distance()
             elif self.car_sonic_servo_angle == 90:
