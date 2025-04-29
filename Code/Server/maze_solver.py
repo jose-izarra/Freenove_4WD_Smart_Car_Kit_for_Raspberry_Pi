@@ -98,7 +98,31 @@ class Car:
             if infrared_value == 2:
                 self.motor.set_motor_model(800,800,800,800)
             elif infrared_value == 0:
+                # Try to find the line by making small adjustments left and right
+                print("Line lost, searching...")
+                # First try turning left
+                self.motor.set_motor_model(-1000,-1000,1000,1000)
+                time.sleep(0.2)
+                infrared_value = self.infrared.read_all_infrared()
+                if infrared_value == 2:
+                    print("Line found on the left")
+                    self.motor.set_motor_model(800,800,800,800)
+                    return
+
+                # If not found on left, try right
+                self.motor.set_motor_model(1000,1000,-1000,-1000)
+                time.sleep(0.4)  # Turn right from the left position (double time)
+                infrared_value = self.infrared.read_all_infrared()
+                if infrared_value == 2:
+                    print("Line found on the right")
+                    self.motor.set_motor_model(800,800,800,800)
+                    return
+
+                # If still not found, stop
                 self.motor.set_motor_model(0,0,0,0)
+
+
+
             # elif infrared_value == 4:
             #     self.motor.set_motor_model(-1500,-1500,2500,2500)
             # elif infrared_value == 6:
