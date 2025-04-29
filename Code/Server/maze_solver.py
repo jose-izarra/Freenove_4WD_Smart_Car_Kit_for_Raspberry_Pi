@@ -215,6 +215,52 @@ class Car:
             # Reset servo to center position
             self.servo.set_servo_pwm('0', 90)
 
+    def mode_maze_right_hand(self):
+        if (time.time() - self.car_record_time) > 0.2:
+            self.car_record_time = time.time()
+            
+            # Look Right
+            self.servo.set_servo_pwm('0', 0)  
+            time.sleep(0.15)
+            right_distance = self.sonic.get_distance()
+            
+            # Look Forward
+            self.servo.set_servo_pwm('0', 90)
+            time.sleep(0.15)
+            front_distance = self.sonic.get_distance()
+            
+            # Look Left
+            self.servo.set_servo_pwm('0', 180)
+            time.sleep(0.15)
+            left_distance = self.sonic.get_distance()
+
+            print("Right: {}, Front: {}, Left: {}".format(right_distance, front_distance, left_distance))
+
+            # Threshold to consider path clear
+            CLEAR_THRESHOLD = 25  # cm
+
+            # Decision making: Right-hand rule
+            if right_distance > CLEAR_THRESHOLD:
+                print("Turning right")
+                self.motor.set_motor_model(1500, 1500, -1500, -1500)  # Turn right
+                time.sleep(0.5)
+                self.motor.set_motor_model(800, 800, 800, 800)  # Move forward
+                time.sleep(0.5)
+            elif front_distance > CLEAR_THRESHOLD:
+                print("Moving forward")
+                self.motor.set_motor_model(800, 800, 800, 800)  # Move forward
+                time.sleep(0.5)
+            elif left_distance > CLEAR_THRESHOLD:
+                print("Turning left")
+                self.motor.set_motor_model(-1500, -1500, 1500, 1500)  # Turn left
+                time.sleep(0.5)
+                self.motor.set_motor_model(800, 800, 800, 800)  # Move forward
+                time.sleep(0.5)
+            else:
+                print("Dead end! Turning around")
+                self.motor.set_motor_model(-1500, -1500, 1500, 1500)  # Turn left (90 degrees)
+                time.sleep(1)  # 180 degree turn (approximate)
+
 def test_car_sonic():
     car = Car()
     try:
@@ -263,6 +309,16 @@ def test_car_wall_following():
         car.close()
         print("\nEnd of program")
 
+def test_car_maze_right_hand():
+    car = Car()
+    try:
+        print("Starting right-hand rule maze solving...")
+        while True:
+            car.mode_maze_right_hand()
+    except KeyboardInterrupt:
+        car.close()
+        print("\nEnd of program")
+
 if __name__ == '__main__':
     import sys
     if len(sys.argv) < 2:
@@ -278,3 +334,5 @@ if __name__ == '__main__':
         test_car_rotate()
     elif sys.argv[1] == 'Wall' or sys.argv[1] == 'wall':
         test_car_wall_following()
+    elif sys.argv[1] == 'Maze' or sys.argv[1] == 'maze':
+        test_car_maze_right_hand()
