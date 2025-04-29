@@ -119,29 +119,9 @@ class Car:
             #     self.motor.set_motor_model(1250, 1250, 2550 ,2500)
                 time.sleep(0.6)
             else:
-                # Line lost, implement search pattern
+                # Line lost, go back a bit
                 print("Line lost, searching...")
-
-                # First try turning left to find the line
-                self.motor.set_motor_model(-1250,-1250,1250,1250) # left
-                time.sleep(0.3)  # Give it a moment to turn
-
-                # Check if we found the line
-                if self.infrared.read_all_infrared() != 0:
-                    return  # Line found, continue with next loop iteration
-
-                # If not found, try turning right
-                self.motor.set_motor_model(1250, 1250,-1250,-1250) # right
-                time.sleep(0.6)  # Turn right (double time to cover both sides)
-
-                # Check if we found the line
-                if self.infrared.read_all_infrared() != 0:
-                    return  # Line found, continue with next loop iteration
-
-                # If still not found, go back to center and try moving forward a bit
-                self.motor.set_motor_model(-1500,2000, 3500,-2000)
-                time.sleep(0.3)  # Return to center
-                self.motor.set_motor_model(800,800,800,800)  # Move forward a bit
+                self.motor.set_motor_model(-800, -800, 800, 800)
                 time.sleep(0.3)
 
     def mode_light(self):
