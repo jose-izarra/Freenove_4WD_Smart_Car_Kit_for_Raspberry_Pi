@@ -7,6 +7,7 @@ import time
 import math
 import curses
 from astar import astar
+import random
 
 MAZE_MAP = [
     [0, 1, 0, 0, 0, 1, 0, 1, 0, 0],
@@ -114,7 +115,7 @@ class Car:
             print("left_infrared: " + str(left_infrared), "right_infrared: " + str(right_infrared), "center_infrared: " + str(center_infrared))
 
             if left_infrared == 4:
-                counter = 0
+                counter[0] = 0
                 # Turn left in episodes
                 self.motor.set_motor_model(-1250, -1250, 1250,1250)  # Turn left
                 time.sleep(0.15)  # Turn for a short time
@@ -122,7 +123,7 @@ class Car:
                 time.sleep(0.1)  # Pause to check sensors
 
             elif right_infrared == 1:
-                counter = 0
+                counter[0] = 0
                 # Turn right in episodes
                 self.motor.set_motor_model(1250, 1250, -1250,-1250)  # Turn right
                 time.sleep(0.15)  # Turn for a short time
@@ -130,7 +131,7 @@ class Car:
                 time.sleep(0.1)  # Pause to check sensors
 
             elif center_infrared == 2:
-                counter = 0
+                counter[0] = 0
                 # Move forward in episodes
                 self.motor.set_motor_model(800,800,800,800)  # Move forward
                 time.sleep(0.2)  # Move for a short time
@@ -138,16 +139,32 @@ class Car:
                 time.sleep(0.1)  # Pause to check sensors
 
             else:
-                counter += 1
+                print('counter', counter[0])
+                counter[0] += 1
                 # Line lost, move backward in episodes
                 print("Line lost, moving back...")
-                if counter < 10:
+
+                chance = random.randint(0, 100)
+
+
+                if chance < 10:
+                    direction = random.choice(["left", "right"])
+                    print(f"Trying random direction: {direction}")
+                    if direction == "left":
+                        self.motor.set_motor_model(-1250, -1250, 1250, 1250)  # Turn left
+                    else:
+                        self.motor.set_motor_model(1250, 1250, -1250, -1250)  # Turn right
+                    time.sleep(0.2)  # Turn for a short time
+                    self.motor.set_motor_model(800, 800, 800, 800)  # Move forward
+
+
+                if counter[0] < 10:
                     self.motor.set_motor_model(-800, -800, -800, -800)  # Move backward
                     time.sleep(0.1)  # Move backward briefly
                     self.motor.set_motor_model(0, 0, 0, 0)  # Stop
                 else:
                     # Pick a random direction
-                    import random
+
                     direction = random.choice(["left", "right"])
                     print(f"Trying random direction: {direction}")
                     if direction == "left":
@@ -314,7 +331,7 @@ def test_car_sonic():
 def test_car_infrared():
     car = Car()
     try:
-        counter = 0
+        counter = [0]
         while True:
             car.mode_infrared(counter)
     except KeyboardInterrupt:
