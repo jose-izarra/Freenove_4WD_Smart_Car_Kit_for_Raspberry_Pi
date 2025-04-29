@@ -81,9 +81,9 @@ class Car:
             print("L:{}, M:{}, R:{}".format(self.car_sonic_distance[0], self.car_sonic_distance[1], self.car_sonic_distance[2]))
             self.run_motor_ultrasonic(self.car_sonic_distance)
 
-            if self.car_sonic_servo_angle <= 30:
+            if self.car_sonic_servo_angle <= 0:
                 self.car_sonic_servo_dir = 1
-            elif self.car_sonic_servo_angle >= 150:
+            elif self.car_sonic_servo_angle >= 120:
                 self.car_sonic_servo_dir = 0
             if self.car_sonic_servo_dir == 1:
                 self.car_sonic_servo_angle += 60
@@ -94,19 +94,21 @@ class Car:
         if (time.time() - self.car_record_time) > 0.2:
             self.car_record_time = time.time()
             infrared_value = self.infrared.read_all_infrared()
-            #print("infrared_value: " + str(infrared_value))
+            print("infrared_value: " + str(infrared_value))
             if infrared_value == 2:
                 self.motor.set_motor_model(800,800,800,800)
-            elif infrared_value == 4:
-                self.motor.set_motor_model(-1500,-1500,2500,2500)
-            elif infrared_value == 6:
-                self.motor.set_motor_model(-2000,-2000,4000,4000)
-            elif infrared_value == 1:
-                self.motor.set_motor_model(2500,2500,-1500,-1500)
-            elif infrared_value == 3:
-                self.motor.set_motor_model(4000,4000,-2000,-2000)
-            elif infrared_value == 7:
+            elif infrared_value == 0:
                 self.motor.set_motor_model(0,0,0,0)
+            # elif infrared_value == 4:
+            #     self.motor.set_motor_model(-1500,-1500,2500,2500)
+            # elif infrared_value == 6:
+            #     self.motor.set_motor_model(-2000,-2000,4000,4000)
+            # elif infrared_value == 1:
+            #     self.motor.set_motor_model(2500,2500,-1500,-1500)
+            # elif infrared_value == 3:
+            #     self.motor.set_motor_model(4000,4000,-2000,-2000)
+            # elif infrared_value == 7:
+            #     self.motor.set_motor_model(0,0,0,0)
 
     def mode_light(self):
         if (time.time() - self.car_record_time) > 0.2:
