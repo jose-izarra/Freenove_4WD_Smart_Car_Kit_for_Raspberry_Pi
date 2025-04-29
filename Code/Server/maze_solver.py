@@ -104,7 +104,7 @@ class Car:
 
             if center_infrared == 2:
                 # Move forward in episodes
-                self.motor.set_motor_model(600,600,600,600)  # Move forward
+                self.motor.set_motor_model(800,800,800,800)  # Move forward
                 time.sleep(0.2)  # Move for a short time
                 self.motor.set_motor_model(0,0,0,0)  # Stop
                 time.sleep(0.1)  # Pause to check sensors
