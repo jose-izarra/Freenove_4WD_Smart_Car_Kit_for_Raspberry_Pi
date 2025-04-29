@@ -105,11 +105,16 @@ class Car:
                 self.motor.set_motor_model(0,0,0,0)
                 time.sleep(0.3)
 
+                left_infrared = self.infrared.read_one_infrared(1) << 2
+                right_infrared = self.infrared.read_one_infrared(3)
+                center_infrared = self.infrared.read_one_infrared(2) << 1
+                print("left_infrared: " + str(left_infrared), "right_infrared: " + str(right_infrared), "center_infrared: " + str(center_infrared))
 
-                if self.infrared.read_one_infrared(1) == 1:
+
+                if left_infrared == 2:
                     self.motor.set_motor_model(-1500,0, 2500,0)
                     time.sleep(0.3)
-                elif self.infrared.read_one_infrared(3) == 1:
+                elif right_infrared == 2:
                     self.motor.set_motor_model(2500,0, -1500,0)
                     time.sleep(0.6)
 
