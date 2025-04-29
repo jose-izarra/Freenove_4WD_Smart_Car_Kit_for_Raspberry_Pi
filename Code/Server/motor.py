@@ -9,11 +9,11 @@ class Ordinary_Car:
         if duty1 > 4095:
             duty1 = 4095
         elif duty1 < -4095:
-            duty1 = -4095        
+            duty1 = -4095
         if duty2 > 4095:
             duty2 = 4095
         elif duty2 < -4095:
-            duty2 = -4095  
+            duty2 = -4095
         if duty3 > 4095:
             duty3 = 4095
         elif duty3 < -4095:
@@ -75,19 +75,18 @@ class Ordinary_Car:
         self.pwm.close()
 
 if __name__=='__main__':
-    PWM = Ordinary_Car()          
+    PWM = Ordinary_Car()
     try:
         PWM.set_motor_model(2000,2000,2000,2000)       #Forward
         time.sleep(1)
         PWM.set_motor_model(-2000,-2000,-2000,-2000)   #Back
         time.sleep(1)
-        PWM.set_motor_model(-2000,-2000,2000,2000)     #Left 
+        PWM.set_motor_model(-2000,-2000,2000,2000)     #Left
         time.sleep(1)
-        PWM.set_motor_model(2000,2000,-2000,-2000)     #Right    
+        PWM.set_motor_model(2000,2000,-2000,-2000)     #Right
         time.sleep(1)
         PWM.set_motor_model(0,0,0,0)                   #Stop
     except KeyboardInterrupt:  # When 'Ctrl+C' is pressed, the child program destroy() will be  executed.
         print ("\nEnd of program")
     finally:
         PWM.close()
-

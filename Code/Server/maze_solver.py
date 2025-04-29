@@ -5,6 +5,9 @@ from infrared import Infrared
 from adc import ADC
 import time
 import math
+import curses
+
+
 
 class Car:
     def __init__(self):
@@ -164,6 +167,90 @@ class Car:
             time.sleep(5*self.time_compensate*bat_compensate/1000)
             angle -= 5
 
+    def manual_control(self, stdscr):
+        # Set up curses for manual control
+        stdscr.nodelay(True)  # Non-blocking input
+        curses.curs_set(0)    # Hide cursor
+        stdscr.clear()
+        stdscr.addstr(0, 0, "Manual Control Mode - WASD keys to move (Q to return to menu)")
+        stdscr.refresh()
+
+        # Movement tracking
+        last_key_time = 0
+        current_key = None
+
+        try:
+            while True:
+                key = stdscr.getch()
+                current_time = time.time()
+
+                # Always register new key presses
+                if key != -1:
+                    current_key = key
+                    last_key_time = current_time
+
+                    if key == ord('q'):
+                        return  # Return to main menu
+
+                    # Process movement commands
+                    if key == ord('w'):  # Forward
+                        stdscr.addstr(1, 0, "Moving forward  ")
+                        self.motor.set_motor_model(800, 800, 800, 800)
+                    elif key == ord('s'):  # Backward
+                        stdscr.addstr(1, 0, "Moving backward ")
+                        self.motor.set_motor_model(-800, -800, -800, -800)
+                    elif key == ord('a'):  # Left
+                        stdscr.addstr(1, 0, "Turning left    ")
+                        self.motor.set_motor_model(-1250, -1250, 1250, 1250)
+                    elif key == ord('d'):  # Right
+                        stdscr.addstr(1, 0, "Turning right   ")
+                        self.motor.set_motor_model(1250, 1250, -1250, -1250)
+                    elif key == ord(' '):  # Space to explicitly stop
+                        stdscr.addstr(1, 0, "Stopped         ")
+                        self.motor.set_motor_model(0, 0, 0, 0)
+                        current_key = None
+
+                # Auto-stop if no key press for 0.1 seconds
+                if current_key is not None and current_time - last_key_time > 0.1:
+                    stdscr.addstr(1, 0, "Stopped (auto)   ")
+                    self.motor.set_motor_model(0, 0, 0, 0)
+                    current_key = None
+
+                # Debug info
+                stdscr.addstr(2, 0, f"Key: {chr(current_key) if current_key else 'None'} | Time since: {current_time - last_key_time:.3f}s")
+                stdscr.refresh()
+
+                # Very small delay for CPU efficiency but maintain responsiveness
+                time.sleep(0.01)
+
+        finally:
+            # Make sure motors are stopped when exiting manual mode
+            self.motor.set_motor_model(0, 0, 0, 0)
+
+    def display_menu(self, stdscr):
+        # Set up curses for menu display
+        curses.curs_set(1)  # Show cursor
+        stdscr.nodelay(False)  # Blocking input for menu
+        stdscr.clear()
+
+        # Menu options
+        menu_items = [
+            "1. Manual Control (WASD)",
+            "2. Line Tracking",
+            "q. Quit"
+        ]
+
+        # Display menu
+        stdscr.addstr(0, 0, "Robot Control Menu")
+        stdscr.addstr(1, 0, "-----------------")
+        for i, item in enumerate(menu_items):
+            stdscr.addstr(i+3, 0, item)
+
+        stdscr.addstr(len(menu_items)+4, 0, "Enter your choice: ")
+        stdscr.refresh()
+
+        return stdscr.getch()
+
 def test_car_sonic():
     car = Car()
     try:
@@ -205,13 +292,42 @@ def test_car_rotate():
 if __name__ == '__main__':
     import sys
     if len(sys.argv) < 2:
-        print("Parameter error: Please assign the device")
-        exit()
-    if sys.argv[1] == 'Sonic' or sys.argv[1] == 'sonic':
-        test_car_sonic()
-    elif sys.argv[1] == 'Infrared' or sys.argv[1] == 'infrared':
-        test_car_infrared()
-    elif sys.argv[1] == 'Light' or sys.argv[1] == 'light':
-        test_car_light()
-    elif sys.argv[1] == 'Rotate' or sys.argv[1] == 'rotate':
-        test_car_rotate()
+        car = Car()
+        try:
+            # Initialize curses
+            stdscr = curses.initscr()
+            curses.noecho()
+            curses.cbreak()
+
+            while True:
+                choice = car.display_menu(stdscr)
+
+                if choice == ord('1'):
+                    car.manual_control(stdscr)
+                elif choice == ord('2'):
+                    try:
+                        while True:
+                            car.mode_infrared()
+                    except KeyboardInterrupt:
+                        car.close()
+                        print("\nEnd of program")
+                elif choice == ord('q'):
+                    break
+
+        except KeyboardInterrupt:
+            pass
+        finally:
+            # Clean up curses
+            curses.nocbreak()
+            curses.echo()
+            curses.endwin()
+            car.close()
+    else:
+        if sys.argv[1] == 'Sonic' or sys.argv[1] == 'sonic':
+            test_car_sonic()
+        elif sys.argv[1] == 'Infrared' or sys.argv[1] == 'infrared':
+            test_car_infrared()
+        elif sys.argv[1] == 'Light' or sys.argv[1] == 'light':
+            test_car_light()
+        elif sys.argv[1] == 'Rotate' or sys.argv[1] == 'rotate':
+            test_car_rotate()
