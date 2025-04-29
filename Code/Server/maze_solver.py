@@ -111,14 +111,14 @@ class Car:
 
             elif left_infrared == 4:
                 # Turn left in episodes
-                self.motor.set_motor_model(1250, 1250, -1250,-1250)  # Turn left
+                self.motor.set_motor_model(-1250, -1250, 1250,1250)  # Turn left
                 time.sleep(0.15)  # Turn for a short time
                 self.motor.set_motor_model(0,0,0,0)  # Stop
                 time.sleep(0.1)  # Pause to check sensors
 
             elif right_infrared == 1:
                 # Turn right in episodes
-                self.motor.set_motor_model(-1250, -1250, 1250,1250)  # Turn right
+                self.motor.set_motor_model(1250, 1250, -1250,-1250)  # Turn right
                 time.sleep(0.15)  # Turn for a short time
                 self.motor.set_motor_model(0,0,0,0)  # Stop
                 time.sleep(0.1)  # Pause to check sensors
