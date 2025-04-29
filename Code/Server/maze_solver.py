@@ -103,7 +103,7 @@ class Car:
             print("left_infrared: " + str(left_infrared), "right_infrared: " + str(right_infrared), "center_infrared: " + str(center_infrared))
 
             if center_infrared == 2:
-                self.motor.set_motor_model(400,400,400,400)
+                self.motor.set_motor_model(800,800,800,800)
                 time.sleep(0.3)
                 self.motor.set_motor_model(0,0,0,0)
 
