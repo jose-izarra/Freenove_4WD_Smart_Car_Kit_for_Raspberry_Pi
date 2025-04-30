@@ -229,6 +229,7 @@ class Car:
             self.car_record_time = time.time()
 
 
+
     def mode_light(self):
         if (time.time() - self.car_record_time) > 0.2:
             self.car_record_time = time.time()
@@ -264,12 +265,15 @@ class Car:
 
     def execute_path_graph(self, path):
         steps_taken = 0
+        step_size = 0.5  # seconds for forward/backward movement
+        turn_size = 0.3  # seconds for turning
+        pause_size = 0.2  # seconds to pause between movements
 
         direction_map = {
-            (1, 0): "down",
-            (-1, 0): "up",
-            (0, 1): "right",
-            (0, -1): "left"
+            (1, 0): "forward",
+            (-1, 0): "backward",
+            (0, 1): "left",
+            (0, -1): "right"
         }
 
         for (cur_x, cur_y), (next_x, next_y) in zip(path, path[1:]):
@@ -279,19 +283,48 @@ class Car:
 
             print(f"Moving from {(cur_x, cur_y)} to {(next_x, next_y)}: {direction}")
 
-            if direction == "up":
-                self.motor.set_motor_model(-800, -800, -800, -800)
-            elif direction == "down":
+            if direction == "forward":
+                # Move forward
                 self.motor.set_motor_model(800, 800, 800, 800)
+                time.sleep(step_size)
+                self.motor.set_motor_model(0, 0, 0, 0)
+                time.sleep(pause_size)
+
+            elif direction == "backward":
+                # Move backward
+                self.motor.set_motor_model(-800, -800, -800, -800)
+                time.sleep(step_size)
+                self.motor.set_motor_model(0, 0, 0, 0)
+                time.sleep(pause_size)
+
             elif direction == "left":
+                # First turn left
                 self.motor.set_motor_model(-1250, -1250, 1250, 1250)
+                time.sleep(turn_size)
+                self.motor.set_motor_model(0, 0, 0, 0)
+                time.sleep(pause_size)
+
+                # Then move forward
+                self.motor.set_motor_model(800, 800, 800, 800)
+                time.sleep(step_size)
+                self.motor.set_motor_model(0, 0, 0, 0)
+                time.sleep(pause_size)
+
             elif direction == "right":
+                # First turn right
                 self.motor.set_motor_model(1250, 1250, -1250, -1250)
+                time.sleep(turn_size)
+                self.motor.set_motor_model(0, 0, 0, 0)
+                time.sleep(pause_size)
+
+                # Then move forward
+                self.motor.set_motor_model(800, 800, 800, 800)
+                time.sleep(step_size)
+                self.motor.set_motor_model(0, 0, 0, 0)
+                time.sleep(pause_size)
 
             steps_taken += 1
-            time.sleep(0.5)
-            self.motor.set_motor_model(0, 0, 0, 0)
-            time.sleep(0.2)
+            print(f"Completed step {steps_taken}")
 
         print(f"Total blocks moved: {steps_taken}")
 
