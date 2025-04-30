@@ -9,13 +9,62 @@ import curses
 from astar import astar
 import random
 
-MAZE_MAP = [
-    [0, 1, 0, 0, 0, 1, 0, 1, 0, 0],
-    [0, 1, 1, 0, 1, 1, 0, 1, 1, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
-    [1, 0, 1, 1, 0, 1, 1, 0, 1, 0],
-    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-]
+MAZE_MAP = {
+    (0, 0): [(1, 0), (0, 1)],
+    (0, 1): [(0, 0), (0, 2)],
+    (0, 2): [(0, 1), (1, 2)],
+    (0, 3): [(1, 3), (0, 4)],
+    (0, 4): [(0, 3), (0, 5)],
+    (0, 5): [(0, 4), (1, 5)],
+    (0, 6): [(1, 6), (0, 7)],
+    (0, 7): [(0, 6), (0, 8)],
+    (0, 8): [(0, 7), (0, 9)],
+    (0, 9): [(0, 8), (1, 9)],
+
+    (1, 0): [(0, 0), (2, 0)],
+    (1, 1): [(1, 2)],
+    (1, 2): [(1, 1), (0, 2)],
+    (1, 3): [(0, 3), (1, 4)],
+    (1, 4): [(1, 3), (2, 4)],
+    (1, 5): [(0, 5), (1, 6)],
+    (1, 6): [(0, 6), (2, 6)],
+    (1, 7): [(2, 7)],
+    (1, 8): [(2, 8), (1, 9)],
+    (1, 9): [(0, 9)],
+
+    (2, 0): [(2, 1)],
+    (2, 1): [(2, 0), (3, 1)],
+    (2, 2): [(3, 2), (2, 3)],
+    (2, 3): [(2, 2)],
+    (2, 4): [(1, 4), (2, 5), (3, 4)],
+    (2, 5): [(2, 4), (3, 5)],
+    (2, 6): [(2, 7), (1, 6)],
+    (2, 7): [(2, 6), (1, 7)],
+    (2, 8): [(3, 8), (1, 8)],
+    (2, 9): [(3, 9)],
+
+    (3, 0): [(4, 0), (3, 1)],
+    (3, 1): [(3, 0), (2, 1), (3, 2)],
+    (3, 2): [(3, 1), (2, 2)],
+    (3, 3): [(4, 3), (3, 4)],
+    (3, 4): [(3, 3), (2, 4), (4, 4)],
+    (3, 5): [(2, 5), (3, 6)],
+    (3, 6): [(3, 5)],
+    (3, 7): [(4, 7), (3, 8)],
+    (3, 8): [(3, 7), (3, 9), (2, 8)],
+    (3, 9): [(3, 8), (2, 9)],
+
+    (4, 0): [(3, 0), (4, 1)],
+    (4, 1): [(4, 0), (4, 2)],
+    (4, 2): [(4, 1), (4, 3)],
+    (4, 3): [(4, 2), (3, 3)],
+    (4, 4): [(3, 4), (4, 5)],
+    (4, 5): [(4, 4)],
+    (4, 6): [(4, 7)],
+    (4, 7): [(4, 6), (3, 6), (4, 8)],
+    (4, 8): [(4, 7), (4, 9)],
+    (4, 9): [(4, 8)]
+}
 
 
 class Car:
@@ -213,27 +262,39 @@ class Car:
             time.sleep(5*self.time_compensate*bat_compensate/1000)
             angle -= 5
 
-    def execute_path(car, path):
+    def execute_path_graph(self, path):
         steps_taken = 0
+
+        direction_map = {
+            (1, 0): "down",
+            (-1, 0): "up",
+            (0, 1): "right",
+            (0, -1): "left"
+        }
+
         for (cur_x, cur_y), (next_x, next_y) in zip(path, path[1:]):
             dx = next_x - cur_x
             dy = next_y - cur_y
+            direction = direction_map.get((dx, dy))
 
-            if dx == 1:  # move down
-                car.motor.set_motor_model(800,800,800,800)
-            elif dx == -1:  # move up
-                car.motor.set_motor_model(-800,-800,-800,-800)
-            elif dy == 1:  # move right
-                car.motor.set_motor_model(1250,1250,-1250,-1250)
-            elif dy == -1:  # move left
-                car.motor.set_motor_model(-1250,-1250,1250,1250)
+            print(f"Moving from {(cur_x, cur_y)} to {(next_x, next_y)}: {direction}")
+
+            if direction == "up":
+                self.motor.set_motor_model(-800, -800, -800, -800)
+            elif direction == "down":
+                self.motor.set_motor_model(800, 800, 800, 800)
+            elif direction == "left":
+                self.motor.set_motor_model(-1250, -1250, 1250, 1250)
+            elif direction == "right":
+                self.motor.set_motor_model(1250, 1250, -1250, -1250)
 
             steps_taken += 1
-            time.sleep(0.5)  # Assume 0.5s = 1 cell block
-            car.motor.set_motor_model(0,0,0,0)
+            time.sleep(0.5)
+            self.motor.set_motor_model(0, 0, 0, 0)
             time.sleep(0.2)
 
         print(f"Total blocks moved: {steps_taken}")
+
 
     def manual_control(self, stdscr):
         # Set up curses for manual control
@@ -370,11 +431,11 @@ def test_solve_maze():
 def test_car_astar():
     car = Car()
     try:
-        start = (0, 0)
-        goal = (4, 9)
+        start = (0, 0)  # Update if your robot starts elsewhere
+        goal = (4, 9)   # Update if your goal changes
         path = astar(MAZE_MAP, start, goal)
-        print("Path found by A*: ", path)
-        car.execute_path(path)
+        print("Path found:", path)
+        car.execute_path_graph(path)
     except KeyboardInterrupt:
         print("Execution interrupted.")
     finally:
