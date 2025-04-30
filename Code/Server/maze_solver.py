@@ -266,7 +266,7 @@ class Car:
     def execute_path_graph(self, path):
         steps_taken = 0
         step_size = 0.5  # seconds for forward/backward movement
-        turn_size = 2  # seconds for turning
+        turn_size = 1.4  # seconds for turning
         pause_size = 0.2  # seconds to pause between movements
 
         direction_map = {
