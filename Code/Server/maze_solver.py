@@ -272,6 +272,8 @@ class Car:
         turn_speed = 2000  # Speed for turning
         clear_path_threshold = 50  # cm - minimum distance required to proceed
         turn_distance_threshold = 15  # cm
+        min_turn_duration = 0.5  # Minimum time to turn
+        max_turn_duration = 0.7  # Maximum time to turn
 
         def direction_vector(a, b):
             return (b[0] - a[0], b[1] - a[1])
@@ -324,15 +326,27 @@ class Car:
                 elif next_turn == "right":
                     self.motor.set_motor_model(turn_speed, turn_speed, -turn_speed, -turn_speed)
                 
-                # Keep turning until we find a clear path
+                # Keep turning until we find a clear path or reach max duration
+                start_time = time.time()
                 while True:
-                    dist = self.sonic.get_distance()
-                    print(f"Turning, distance: {dist:.2f} cm")
-                    if dist > clear_path_threshold:
+                    current_time = time.time()
+                    turn_duration = current_time - start_time
+                    
+                    # Check if we've exceeded maximum turn duration
+                    if turn_duration >= max_turn_duration:
+                        print("Maximum turn duration reached")
                         break
-                    time.sleep(0.1)  # Check distance every 0.1 seconds
+                    
+                    # Only check distance if we've turned for at least minimum duration
+                    if turn_duration >= min_turn_duration:
+                        dist = self.sonic.get_distance()
+                        print(f"Turning, distance: {dist:.2f} cm, duration: {turn_duration:.2f}s")
+                        if dist > clear_path_threshold:
+                            break
+                    
+                    time.sleep(0.1)  # Check every 0.1 seconds
                 
-                # Stop after finding clear path
+                # Stop after finding clear path or reaching max duration
                 self.motor.set_motor_model(0, 0, 0, 0)
                 time.sleep(pause_size)
 
