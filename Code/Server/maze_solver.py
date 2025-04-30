@@ -264,86 +264,82 @@ class Car:
             angle -= 5
 
     def execute_path_graph(self, path):
-        steps_taken = 0
-        step_size = 0.5  # seconds for forward/backward movement
-        turn_size = 1.4  # seconds for turning
-        pause_size = 0.2  # seconds to pause between movements
+        step_size = 0.5  # seconds to move one cell forward
+        pause_size = 0.2
 
-        direction_map = {
-            (1, 0): "forward",
-            (-1, 0): "forward",
-            (0, 1): "left",
-            (0, -1): "right"
+        direction_vectors = {
+            "up": (-1, 0),
+            "down": (1, 0),
+            "left": (0, -1),
+            "right": (0, 1)
         }
 
-        def turn_90_degrees(direction):
-            # Get initial distance
-            initial_distance = self.sonic.get_distance()
-            print(f"Initial distance: {initial_distance}")
+        right_turn = {
+            "up": "right",
+            "right": "down",
+            "down": "left",
+            "left": "up"
+        }
 
-            # Start turning
-            if direction == "left":
-                self.motor.set_motor_model(-2000, -2000, 2000, 2000)
-            else:  # right
+        left_turn = {
+            "up": "left",
+            "left": "down",
+            "down": "right",
+            "right": "up"
+        }
+
+        def get_direction(from_pos, to_pos):
+            dx = to_pos[0] - from_pos[0]
+            dy = to_pos[1] - from_pos[1]
+            for dir_name, vec in direction_vectors.items():
+                if vec == (dx, dy):
+                    return dir_name
+            raise ValueError(f"Invalid move from {from_pos} to {to_pos}")
+
+        def rotate_to(new_heading, current_heading):
+            if right_turn[current_heading] == new_heading:
+                print(f"Turning right from {current_heading} to {new_heading}")
                 self.motor.set_motor_model(2000, 2000, -2000, -2000)
+            elif left_turn[current_heading] == new_heading:
+                print(f"Turning left from {current_heading} to {new_heading}")
+                self.motor.set_motor_model(-2000, -2000, 2000, 2000)
+            else:
+                raise ValueError(f"Unexpected turn from {current_heading} to {new_heading} (180° not allowed)")
 
-            # Monitor distance until we detect a significant change
-            while True:
-                current_distance = self.sonic.get_distance()
-                print(f"Current distance: {current_distance}")
-
-                # If we detect a significant change in distance, we've completed the turn
-                if abs(current_distance - initial_distance) > 10:  # Adjust threshold as needed
-                    break
-
-                time.sleep(0.1)  # Small delay between distance checks
-
-            # Stop the turn
+            time.sleep(0.7)
             self.motor.set_motor_model(0, 0, 0, 0)
             time.sleep(pause_size)
 
-        for (cur_x, cur_y), (next_x, next_y) in zip(path, path[1:]):
-            dx = next_x - cur_x
-            dy = next_y - cur_y
-            direction = direction_map.get((dx, dy))
+        heading = "down"  # Assume starting facing down
 
-            print(f"Moving from {(cur_x, cur_y)} to {(next_x, next_y)}: {direction}")
+        i = 0
+        while i < len(path) - 1:
+            current = path[i]
+            next_node = path[i + 1]
+            next_direction = get_direction(current, next_node)
 
-            if direction == "forward":
-                # Move forward
-                self.motor.set_motor_model(800, 800, 800, 800)
-                time.sleep(step_size)
-                self.motor.set_motor_model(0, 0, 0, 0)
-                time.sleep(pause_size)
+            if heading != next_direction:
+                rotate_to(next_direction, heading)
+                heading = next_direction
 
-            elif direction == "left":
-                # Turn left 90 degrees using ultrasonic sensor
-                print("Turning left 90 degrees...")
-                turn_90_degrees("left")
+            # Count how many steps forward we can take in this heading
+            j = i + 1
+            while (
+                j < len(path) and
+                get_direction(path[j - 1], path[j]) == heading
+            ):
+                j += 1
 
-                # Then move forward
-                print("Moving forward after turn...")
-                self.motor.set_motor_model(800, 800, 800, 800)
-                time.sleep(step_size)
-                self.motor.set_motor_model(0, 0, 0, 0)
-                time.sleep(pause_size)
+            steps = j - i - 1
+            print(f"Moving forward {steps} steps in direction {heading}")
 
-            elif direction == "right":
-                # Turn right 90 degrees using ultrasonic sensor
-                print("Turning right 90 degrees...")
-                turn_90_degrees("right")
+            self.motor.set_motor_model(800, 800, 800, 800)
+            time.sleep(step_size * steps)
+            self.motor.set_motor_model(0, 0, 0, 0)
+            time.sleep(pause_size)
 
-                # Then move forward
-                print("Moving forward after turn...")
-                self.motor.set_motor_model(800, 800, 800, 800)
-                time.sleep(step_size)
-                self.motor.set_motor_model(0, 0, 0, 0)
-                time.sleep(pause_size)
+            i = j - 1  # continue from the last node moved to
 
-            steps_taken += 1
-            print(f"Completed step {steps_taken}")
-
-        print(f"Total blocks moved: {steps_taken}")
 
 
     def manual_control(self, stdscr):
