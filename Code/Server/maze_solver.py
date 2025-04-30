@@ -269,9 +269,9 @@ class Car:
     def execute_path_graph(self, path):
         pause_size = 0.2
         forward_speed = 800
-        turn_duration = 1.0  # Increased from 0.7 to 1.0 seconds
-        turn_distance_threshold = 15  # cm
         turn_speed = 2000  # Speed for turning
+        clear_path_threshold = 50  # cm - minimum distance required to proceed
+        turn_distance_threshold = 15  # cm
 
         def direction_vector(a, b):
             return (b[0] - a[0], b[1] - a[1])
@@ -317,16 +317,24 @@ class Car:
 
                 next_turn = turns.popleft()
                 print(f"Performing turn: {next_turn}")
+                
+                # Start turning
                 if next_turn == "left":
                     self.motor.set_motor_model(-turn_speed, -turn_speed, turn_speed, turn_speed)
-                    time.sleep(turn_duration)  # Turn for full duration
-                    self.motor.set_motor_model(0, 0, 0, 0)  # Stop after turn
-                    time.sleep(pause_size)  # Pause after turn
                 elif next_turn == "right":
                     self.motor.set_motor_model(turn_speed, turn_speed, -turn_speed, -turn_speed)
-                    time.sleep(turn_duration)  # Turn for full duration
-                    self.motor.set_motor_model(0, 0, 0, 0)  # Stop after turn
-                    time.sleep(pause_size)  # Pause after turn
+                
+                # Keep turning until we find a clear path
+                while True:
+                    dist = self.sonic.get_distance()
+                    print(f"Turning, distance: {dist:.2f} cm")
+                    if dist > clear_path_threshold:
+                        break
+                    time.sleep(0.1)  # Check distance every 0.1 seconds
+                
+                # Stop after finding clear path
+                self.motor.set_motor_model(0, 0, 0, 0)
+                time.sleep(pause_size)
 
                 # Resume forward
                 self.motor.set_motor_model(forward_speed, forward_speed, forward_speed, forward_speed)
