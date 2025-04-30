@@ -276,6 +276,32 @@ class Car:
             (0, -1): "right"
         }
 
+        def turn_90_degrees(direction):
+            # Get initial distance
+            initial_distance = self.sonic.get_distance()
+            print(f"Initial distance: {initial_distance}")
+
+            # Start turning
+            if direction == "left":
+                self.motor.set_motor_model(-1250, -1250, 1250, 1250)
+            else:  # right
+                self.motor.set_motor_model(1250, 1250, -1250, -1250)
+
+            # Monitor distance until we detect a significant change
+            while True:
+                current_distance = self.sonic.get_distance()
+                print(f"Current distance: {current_distance}")
+
+                # If we detect a significant change in distance, we've completed the turn
+                if abs(current_distance - initial_distance) > 10:  # Adjust threshold as needed
+                    break
+
+                time.sleep(0.1)  # Small delay between distance checks
+
+            # Stop the turn
+            self.motor.set_motor_model(0, 0, 0, 0)
+            time.sleep(pause_size)
+
         for (cur_x, cur_y), (next_x, next_y) in zip(path, path[1:]):
             dx = next_x - cur_x
             dy = next_y - cur_y
@@ -291,26 +317,24 @@ class Car:
                 time.sleep(pause_size)
 
             elif direction == "left":
-                # First turn left
-                self.motor.set_motor_model(-1250, -1250, 1250, 1250)
-                time.sleep(turn_size)
-                self.motor.set_motor_model(0, 0, 0, 0)
-                time.sleep(pause_size)
+                # Turn left 90 degrees using ultrasonic sensor
+                print("Turning left 90 degrees...")
+                turn_90_degrees("left")
 
                 # Then move forward
+                print("Moving forward after turn...")
                 self.motor.set_motor_model(800, 800, 800, 800)
                 time.sleep(step_size)
                 self.motor.set_motor_model(0, 0, 0, 0)
                 time.sleep(pause_size)
 
             elif direction == "right":
-                # First turn right
-                self.motor.set_motor_model(1250, 1250, -1250, -1250)
-                time.sleep(turn_size)
-                self.motor.set_motor_model(0, 0, 0, 0)
-                time.sleep(pause_size)
+                # Turn right 90 degrees using ultrasonic sensor
+                print("Turning right 90 degrees...")
+                turn_90_degrees("right")
 
                 # Then move forward
+                print("Moving forward after turn...")
                 self.motor.set_motor_model(800, 800, 800, 800)
                 time.sleep(step_size)
                 self.motor.set_motor_model(0, 0, 0, 0)
