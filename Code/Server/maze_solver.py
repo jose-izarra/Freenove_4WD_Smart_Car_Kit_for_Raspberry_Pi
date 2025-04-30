@@ -264,8 +264,8 @@ class Car:
             angle -= 5
 
     def execute_path_graph(self, path):
-        step_size = 0.5
         pause_size = 0.2
+        forward_speed = 800
 
         def direction_vector(a, b):
             return (b[0] - a[0], b[1] - a[1])
@@ -280,42 +280,45 @@ class Car:
             self.motor.set_motor_model(0, 0, 0, 0)
             time.sleep(pause_size)
 
-        # Determine direction vectors between steps
-        directions = [direction_vector(a, b) for a, b in zip(path, path[1:])]
+        def determine_turn(prev_dir, new_dir):
+            dx1, dy1 = prev_dir
+            dx2, dy2 = new_dir
+            if (dx1, dy1, dx2, dy2) in [
+                (0, 1, 1, 0), (1, 0, 0, -1), (0, -1, -1, 0), (-1, 0, 0, 1)
+            ]:
+                return "right"
+            elif (dx1, dy1, dx2, dy2) in [
+                (0, 1, -1, 0), (1, 0, 0, 1), (0, -1, 1, 0), (-1, 0, 0, -1)
+            ]:
+                return "left"
+            else:
+                raise ValueError(f"Invalid turn from {prev_dir} to {new_dir}")
 
-        i = 0
-        while i < len(directions):
-            # Move forward through all consecutive identical directions
-            current_dir = directions[i]
-            length = 1
-            while i + length < len(directions) and directions[i + length] == current_dir:
-                length += 1
+        # Begin driving forward
+        print("Starting forward motion...")
+        self.motor.set_motor_model(forward_speed, forward_speed, forward_speed, forward_speed)
 
-            print(f"Moving forward {length} blocks")
-            self.motor.set_motor_model(800, 800, 800, 800)
-            time.sleep(step_size * length)
-            self.motor.set_motor_model(0, 0, 0, 0)
-            time.sleep(pause_size)
+        for i in range(1, len(path) - 1):
+            prev_dir = direction_vector(path[i - 1], path[i])
+            next_dir = direction_vector(path[i], path[i + 1])
 
-            i += length
-            if i < len(directions):
-                # Compare current_dir and next_dir to decide if left or right turn
-                dx1, dy1 = current_dir
-                dx2, dy2 = directions[i]
-                turn_dir = None
+            if prev_dir != next_dir:
+                # Stop before turning
+                print(f"Detected turn at {path[i]} from {prev_dir} to {next_dir}")
+                self.motor.set_motor_model(0, 0, 0, 0)
+                time.sleep(pause_size)
 
-                if (dx1, dy1, dx2, dy2) in [
-                    (0, 1, 1, 0), (1, 0, 0, -1), (0, -1, -1, 0), (-1, 0, 0, 1)
-                ]:
-                    turn_dir = "right"
-                elif (dx1, dy1, dx2, dy2) in [
-                    (0, 1, -1, 0), (1, 0, 0, 1), (0, -1, 1, 0), (-1, 0, 0, -1)
-                ]:
-                    turn_dir = "left"
-                else:
-                    raise ValueError(f"Unexpected direction change from {current_dir} to {directions[i]}")
+                # Turn left/right
+                direction = determine_turn(prev_dir, next_dir)
+                turn(direction)
 
-                turn(turn_dir)
+                # Resume forward
+                print("Resuming forward motion...")
+                self.motor.set_motor_model(forward_speed, forward_speed, forward_speed, forward_speed)
+
+        # After final segment, stop the robot
+        print("Path complete. Stopping.")
+        self.motor.set_motor_model(0, 0, 0, 0)
 
 
 
