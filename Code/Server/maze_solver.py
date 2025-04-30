@@ -8,6 +8,7 @@ import math
 import curses
 from astar import astar
 import random
+from collections import deque
 
 MAZE_MAP = {
     (0, 0): [(1, 0), (0, 1)],
