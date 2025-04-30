@@ -266,12 +266,12 @@ class Car:
     def execute_path_graph(self, path):
         steps_taken = 0
         step_size = 0.5  # seconds for forward/backward movement
-        turn_size = 0.3  # seconds for turning
+        turn_size = 1  # seconds for turning
         pause_size = 0.2  # seconds to pause between movements
 
         direction_map = {
             (1, 0): "forward",
-            (-1, 0): "backward",
+            (-1, 0): "forward",
             (0, 1): "left",
             (0, -1): "right"
         }
@@ -286,13 +286,6 @@ class Car:
             if direction == "forward":
                 # Move forward
                 self.motor.set_motor_model(800, 800, 800, 800)
-                time.sleep(step_size)
-                self.motor.set_motor_model(0, 0, 0, 0)
-                time.sleep(pause_size)
-
-            elif direction == "backward":
-                # Move backward
-                self.motor.set_motor_model(-800, -800, -800, -800)
                 time.sleep(step_size)
                 self.motor.set_motor_model(0, 0, 0, 0)
                 time.sleep(pause_size)
