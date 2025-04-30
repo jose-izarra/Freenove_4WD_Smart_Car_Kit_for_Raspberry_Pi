@@ -282,11 +282,11 @@ class Car:
             if (dx1, dy1, dx2, dy2) in [
                 (0, 1, 1, 0), (1, 0, 0, -1), (0, -1, -1, 0), (-1, 0, 0, 1)
             ]:
-                return "left"
+                return "right"
             elif (dx1, dy1, dx2, dy2) in [
                 (0, 1, -1, 0), (1, 0, 0, 1), (0, -1, 1, 0), (-1, 0, 0, -1)
             ]:
-                return "right"
+                return "left"
             return None
 
         def extract_turns(path):
@@ -332,9 +332,95 @@ class Car:
         print("All turns completed. Stopping.")
         self.motor.set_motor_model(0, 0, 0, 0)
 
+    def follow_line_then_path(self, path, max_no_line_moves=100):
+        no_line_counter = 0
+        counter = [0]
+        line_following = True
 
+        while True:
+            if line_following:
+                # Follow the line
+                self.mode_infrared(counter)
 
+                # Check if we've lost the line
+                if counter[0] > 0:
+                    no_line_counter += 1
+                    if no_line_counter >= max_no_line_moves:
+                        print("Line following completed, switching to path execution")
+                        line_following = False
+                        self.motor.set_motor_model(0, 0, 0, 0)  # Stop before starting path
+                        time.sleep(1)  # Pause before starting path
+                else:
+                    no_line_counter = 0  # Reset counter if we find the line
+            else:
+                # Execute the path
+                pause_size = 0.2
+                forward_speed = 800
+                turn_duration = 0.7  # Adjust for real-world timing
+                turn_distance_threshold = 15  # cm
 
+                def direction_vector(a, b):
+                    return (b[0] - a[0], b[1] - a[1])
+
+                def determine_turn(prev_dir, new_dir):
+                    dx1, dy1 = prev_dir
+                    dx2, dy2 = new_dir
+                    # Adjusted for real-world robot view: matrix right = robot left
+                    if (dx1, dy1, dx2, dy2) in [
+                        (0, 1, 1, 0), (1, 0, 0, -1), (0, -1, -1, 0), (-1, 0, 0, 1)
+                    ]:
+                        return "right"
+                    elif (dx1, dy1, dx2, dy2) in [
+                        (0, 1, -1, 0), (1, 0, 0, 1), (0, -1, 1, 0), (-1, 0, 0, -1)
+                    ]:
+                        return "left"
+                    return None
+
+                def extract_turns(path):
+                    turns = deque()
+                    dirs = [direction_vector(a, b) for a, b in zip(path, path[1:])]
+                    for i in range(1, len(dirs)):
+                        if dirs[i] != dirs[i - 1]:
+                            turn = determine_turn(dirs[i - 1], dirs[i])
+                            if turn:
+                                turns.append(turn)
+                    return turns
+
+                turns = extract_turns(path)
+                print(f"Turns extracted: {list(turns)}")
+
+                # Start moving forward
+                self.motor.set_motor_model(forward_speed, forward_speed, forward_speed, forward_speed)
+
+                while turns:
+                    dist = self.sonic.get_distance()
+                    print(f"Distance to wall: {dist:.2f} cm")
+
+                    if dist < turn_distance_threshold:
+                        # Stop and turn
+                        self.motor.set_motor_model(0, 0, 0, 0)
+                        time.sleep(pause_size)
+
+                        next_turn = turns.popleft()
+                        print(f"Performing turn: {next_turn}")
+                        if next_turn == "left":
+                            self.motor.set_motor_model(-2000, -2000, 2000, 2000)
+                        elif next_turn == "right":
+                            self.motor.set_motor_model(2000, 2000, -2000, -2000)
+                        time.sleep(turn_duration)
+
+                        # Resume forward
+                        self.motor.set_motor_model(0, 0, 0, 0)
+                        time.sleep(pause_size)
+                        self.motor.set_motor_model(forward_speed, forward_speed, forward_speed, forward_speed)
+
+                    time.sleep(0.1)
+
+                print("Path execution completed. Stopping.")
+                self.motor.set_motor_model(0, 0, 0, 0)
+                break  # Exit the loop after path execution
+
+            time.sleep(0.1)  # Small delay to prevent CPU overuse
 
     def manual_control(self, stdscr):
         # Set up curses for manual control
