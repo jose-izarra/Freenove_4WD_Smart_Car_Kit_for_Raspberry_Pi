@@ -269,8 +269,9 @@ class Car:
     def execute_path_graph(self, path):
         pause_size = 0.2
         forward_speed = 800
-        turn_duration = 0.7  # Adjust for real-world timing
+        turn_duration = 1.0  # Increased from 0.7 to 1.0 seconds
         turn_distance_threshold = 15  # cm
+        turn_speed = 2000  # Speed for turning
 
         def direction_vector(a, b):
             return (b[0] - a[0], b[1] - a[1])
@@ -317,14 +318,17 @@ class Car:
                 next_turn = turns.popleft()
                 print(f"Performing turn: {next_turn}")
                 if next_turn == "left":
-                    self.motor.set_motor_model(-2000, -2000, 2000, 2000)
+                    self.motor.set_motor_model(-turn_speed, -turn_speed, turn_speed, turn_speed)
+                    time.sleep(turn_duration)  # Turn for full duration
+                    self.motor.set_motor_model(0, 0, 0, 0)  # Stop after turn
+                    time.sleep(pause_size)  # Pause after turn
                 elif next_turn == "right":
-                    self.motor.set_motor_model(2000, 2000, -2000, -2000)
-                time.sleep(turn_duration)
+                    self.motor.set_motor_model(turn_speed, turn_speed, -turn_speed, -turn_speed)
+                    time.sleep(turn_duration)  # Turn for full duration
+                    self.motor.set_motor_model(0, 0, 0, 0)  # Stop after turn
+                    time.sleep(pause_size)  # Pause after turn
 
                 # Resume forward
-                self.motor.set_motor_model(0, 0, 0, 0)
-                time.sleep(pause_size)
                 self.motor.set_motor_model(forward_speed, forward_speed, forward_speed, forward_speed)
 
             time.sleep(0.1)
