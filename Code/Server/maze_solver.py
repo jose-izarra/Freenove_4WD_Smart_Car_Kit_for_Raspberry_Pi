@@ -283,9 +283,9 @@ class Car:
 
             # Start turning
             if direction == "left":
-                self.motor.set_motor_model(-1250, -1250, 1250, 1250)
+                self.motor.set_motor_model(-2000, -2000, 2000, 2000)
             else:  # right
-                self.motor.set_motor_model(1250, 1250, -1250, -1250)
+                self.motor.set_motor_model(2000, 2000, -2000, -2000)
 
             # Monitor distance until we detect a significant change
             while True:
