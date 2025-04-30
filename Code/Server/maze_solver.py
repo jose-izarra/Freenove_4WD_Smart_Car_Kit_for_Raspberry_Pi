@@ -264,81 +264,59 @@ class Car:
             angle -= 5
 
     def execute_path_graph(self, path):
-        step_size = 0.5  # seconds to move one cell forward
+        step_size = 0.5
         pause_size = 0.2
 
-        direction_vectors = {
-            "up": (-1, 0),
-            "down": (1, 0),
-            "left": (0, -1),
-            "right": (0, 1)
-        }
+        def direction_vector(a, b):
+            return (b[0] - a[0], b[1] - a[1])
 
-        right_turn = {
-            "up": "right",
-            "right": "down",
-            "down": "left",
-            "left": "up"
-        }
-
-        left_turn = {
-            "up": "left",
-            "left": "down",
-            "down": "right",
-            "right": "up"
-        }
-
-        def get_direction(from_pos, to_pos):
-            dx = to_pos[0] - from_pos[0]
-            dy = to_pos[1] - from_pos[1]
-            for dir_name, vec in direction_vectors.items():
-                if vec == (dx, dy):
-                    return dir_name
-            raise ValueError(f"Invalid move from {from_pos} to {to_pos}")
-
-        def rotate_to(new_heading, current_heading):
-            if right_turn[current_heading] == new_heading:
-                print(f"Turning right from {current_heading} to {new_heading}")
-                self.motor.set_motor_model(2000, 2000, -2000, -2000)
-            elif left_turn[current_heading] == new_heading:
-                print(f"Turning left from {current_heading} to {new_heading}")
+        def turn(direction):
+            print(f"Turning {direction}...")
+            if direction == "left":
                 self.motor.set_motor_model(-2000, -2000, 2000, 2000)
-            else:
-                raise ValueError(f"Unexpected turn from {current_heading} to {new_heading} (180° not allowed)")
-
+            elif direction == "right":
+                self.motor.set_motor_model(2000, 2000, -2000, -2000)
             time.sleep(0.7)
             self.motor.set_motor_model(0, 0, 0, 0)
             time.sleep(pause_size)
 
-        heading = "down"  # Assume starting facing down
+        # Determine direction vectors between steps
+        directions = [direction_vector(a, b) for a, b in zip(path, path[1:])]
 
         i = 0
-        while i < len(path) - 1:
-            current = path[i]
-            next_node = path[i + 1]
-            next_direction = get_direction(current, next_node)
+        while i < len(directions):
+            # Move forward through all consecutive identical directions
+            current_dir = directions[i]
+            length = 1
+            while i + length < len(directions) and directions[i + length] == current_dir:
+                length += 1
 
-            if heading != next_direction:
-                rotate_to(next_direction, heading)
-                heading = next_direction
-
-            # Count how many steps forward we can take in this heading
-            j = i + 1
-            while (
-                j < len(path) and
-                get_direction(path[j - 1], path[j]) == heading
-            ):
-                j += 1
-
-            steps = j - i - 1
-            print(f"Moving forward {steps} steps in direction {heading}")
-
+            print(f"Moving forward {length} blocks")
             self.motor.set_motor_model(800, 800, 800, 800)
-            time.sleep(step_size * steps)
+            time.sleep(step_size * length)
             self.motor.set_motor_model(0, 0, 0, 0)
             time.sleep(pause_size)
 
-            i = j - 1  # continue from the last node moved to
+            i += length
+            if i < len(directions):
+                # Compare current_dir and next_dir to decide if left or right turn
+                dx1, dy1 = current_dir
+                dx2, dy2 = directions[i]
+                turn_dir = None
+
+                if (dx1, dy1, dx2, dy2) in [
+                    (0, 1, 1, 0), (1, 0, 0, -1), (0, -1, -1, 0), (-1, 0, 0, 1)
+                ]:
+                    turn_dir = "right"
+                elif (dx1, dy1, dx2, dy2) in [
+                    (0, 1, -1, 0), (1, 0, 0, 1), (0, -1, 1, 0), (-1, 0, 0, -1)
+                ]:
+                    turn_dir = "left"
+                else:
+                    raise ValueError(f"Unexpected direction change from {current_dir} to {directions[i]}")
+
+                turn(turn_dir)
+
 
 
 
