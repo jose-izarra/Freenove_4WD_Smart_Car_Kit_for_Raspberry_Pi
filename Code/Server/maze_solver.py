@@ -263,62 +263,74 @@ class Car:
             time.sleep(5*self.time_compensate*bat_compensate/1000)
             angle -= 5
 
+    from collections import deque
+
     def execute_path_graph(self, path):
         pause_size = 0.2
         forward_speed = 800
+        turn_duration = 0.7  # Adjust for real-world timing
+        turn_distance_threshold = 15  # cm
 
         def direction_vector(a, b):
             return (b[0] - a[0], b[1] - a[1])
 
-        def turn(direction):
-            print(f"Turning {direction}...")
-            if direction == "left":
-                self.motor.set_motor_model(-2000, -2000, 2000, 2000)
-            elif direction == "right":
-                self.motor.set_motor_model(2000, 2000, -2000, -2000)
-            time.sleep(0.7)
-            self.motor.set_motor_model(0, 0, 0, 0)
-            time.sleep(pause_size)
-
         def determine_turn(prev_dir, new_dir):
             dx1, dy1 = prev_dir
             dx2, dy2 = new_dir
+            # Adjusted for real-world robot view: matrix right = robot left
             if (dx1, dy1, dx2, dy2) in [
                 (0, 1, 1, 0), (1, 0, 0, -1), (0, -1, -1, 0), (-1, 0, 0, 1)
             ]:
-                return "right"
+                return "left"
             elif (dx1, dy1, dx2, dy2) in [
                 (0, 1, -1, 0), (1, 0, 0, 1), (0, -1, 1, 0), (-1, 0, 0, -1)
             ]:
-                return "left"
-            else:
-                raise ValueError(f"Invalid turn from {prev_dir} to {new_dir}")
+                return "right"
+            return None
 
-        # Begin driving forward
-        print("Starting forward motion...")
+        def extract_turns(path):
+            turns = deque()
+            dirs = [direction_vector(a, b) for a, b in zip(path, path[1:])]
+            for i in range(1, len(dirs)):
+                if dirs[i] != dirs[i - 1]:
+                    turn = determine_turn(dirs[i - 1], dirs[i])
+                    if turn:
+                        turns.append(turn)
+            return turns
+
+        turns = extract_turns(path)
+        print(f"Turns extracted: {list(turns)}")
+
+        # Start moving forward
         self.motor.set_motor_model(forward_speed, forward_speed, forward_speed, forward_speed)
 
-        for i in range(1, len(path) - 1):
-            prev_dir = direction_vector(path[i - 1], path[i])
-            next_dir = direction_vector(path[i], path[i + 1])
+        while turns:
+            dist = self.sonic.get_distance()
+            print(f"Distance to wall: {dist:.2f} cm")
 
-            if prev_dir != next_dir:
-                # Stop before turning
-                print(f"Detected turn at {path[i]} from {prev_dir} to {next_dir}")
+            if dist < turn_distance_threshold:
+                # Stop and turn
                 self.motor.set_motor_model(0, 0, 0, 0)
                 time.sleep(pause_size)
 
-                # Turn left/right
-                direction = determine_turn(prev_dir, next_dir)
-                turn(direction)
+                next_turn = turns.popleft()
+                print(f"Performing turn: {next_turn}")
+                if next_turn == "left":
+                    self.motor.set_motor_model(-2000, -2000, 2000, 2000)
+                elif next_turn == "right":
+                    self.motor.set_motor_model(2000, 2000, -2000, -2000)
+                time.sleep(turn_duration)
 
                 # Resume forward
-                print("Resuming forward motion...")
+                self.motor.set_motor_model(0, 0, 0, 0)
+                time.sleep(pause_size)
                 self.motor.set_motor_model(forward_speed, forward_speed, forward_speed, forward_speed)
 
-        # After final segment, stop the robot
-        print("Path complete. Stopping.")
+            time.sleep(0.1)
+
+        print("All turns completed. Stopping.")
         self.motor.set_motor_model(0, 0, 0, 0)
+
 
 
 
